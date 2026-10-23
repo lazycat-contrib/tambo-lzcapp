@@ -1,0 +1,135 @@
+application:
+  subdomain: tambo
+  public_path:
+    - /
+  upstreams:
+    - location: /
+      backend: http://web:3000/
+  routes:
+    # The API is reachable both from the browser (Next.js server actions) and
+    # from MCP clients; expose it under a path prefix of the same subdomain.
+    - location: /api/v1/*
+      backend: http://api:3000/
+
+services:
+  postgres:
+    # upstream: docker.io/library/postgres:17
+    image: docker.1ms.run/library/postgres:17-alpine
+    environment:
+      - POSTGRES_DB=tambo
+      - POSTGRES_USER=tambo
+      - POSTGRES_PASSWORD={{ stable_secret "postgres_password" }}
+      - PGDATA=/var/lib/postgresql/data/pgdata
+      - TZ=Asia/Shanghai
+    binds:
+      - /lzcapp/var/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U tambo -d tambo
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  minio:
+    # upstream: docker.io/minio/minio:latest
+    image: docker.1ms.run/minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER={{ stable_secret "minio_user" }}
+      - MINIO_ROOT_PASSWORD={{ stable_secret "minio_password" }}
+    binds:
+      - /lzcapp/var/minio:/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - curl -f http://127.0.0.1:9000/minio/health/ready || exit 1
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  api:
+    # upstream: ghcr.io/tambo-ai/tambo-api-server:1.33.2
+    image: ghcr.1ms.run/tambo-ai/tambo-api-server:1.33.2@sha256:ab249ea8ada15293ae7def6b6af653d327fa69bfd9c0fdf207975ecea4e5393c
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - TZ=Asia/Shanghai
+      - DATABASE_URL=postgresql://tambo:{{ stable_secret "postgres_password" }}@postgres:5432/tambo
+      # 32+ character secrets used to encrypt API and provider keys at rest.
+      - API_KEY_SECRET={{ stable_secret "api_key_secret" }}
+      - PROVIDER_KEY_SECRET={{ stable_secret "provider_key_secret" }}
+      - FALLBACK_OPENAI_API_KEY={{ .U.fallback_openai_api_key }}
+      - OPENAI_API_KEY={{ .U.fallback_openai_api_key }}
+      - ALLOWED_LOGIN_DOMAIN={{ .U.allowed_login_domain }}
+      - TAMBO_WHITELABEL_ORG_NAME={{ .U.org_name }}
+      # Attachment storage: falls back to the bundled MinIO unless the wizard
+      # supplies an external S3 service. An incomplete set disables uploads.
+      - S3_ENDPOINT={{ if .U.s3_endpoint }}{{ .U.s3_endpoint }}{{ else }}http://minio:9000{{ end }}
+      - S3_REGION={{ if .U.s3_region }}{{ .U.s3_region }}{{ else }}us-east-1{{ end }}
+      - S3_ACCESS_KEY_ID={{ if .U.s3_access_key_id }}{{ .U.s3_access_key_id }}{{ else }}{{ stable_secret "minio_user" }}{{ end }}
+      - S3_SECRET_ACCESS_KEY={{ if .U.s3_secret_access_key }}{{ .U.s3_secret_access_key }}{{ else }}{{ stable_secret "minio_password" }}{{ end }}
+      - S3_BUCKET={{ if .U.s3_bucket }}{{ .U.s3_bucket }}{{ else }}tambo-attachments{{ end }}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    # Upstream does not migrate on boot. Run the schema migration once against a
+    # fresh database, then exec the normal server entrypoint.
+    command: |
+      sh -c 'if [ ! -f /lzcapp/var/.db-initialized ]; then
+        echo "tambo: initializing database schema..."
+        npm -w @tambo-ai-cloud/db run db:migrate && touch /lzcapp/var/.db-initialized || exit 1
+        echo "tambo: schema ready"
+      fi
+      exec dumb-init node apps/api/dist/apps/api/src/main'
+    binds:
+      - /lzcapp/var:/lzcapp/var
+
+  web:
+    # upstream: ghcr.io/tambo-ai/tambo-web-server:1.33.2
+    image: ghcr.1ms.run/tambo-ai/tambo-web-server:1.33.2@sha256:a530c1c50c6818b4bc6644187060761704812c88f0db14ba8109f434cd406910
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - TZ=Asia/Shanghai
+      - DATABASE_URL=postgresql://tambo:{{ stable_secret "postgres_password" }}@postgres:5432/tambo
+      - API_KEY_SECRET={{ stable_secret "api_key_secret" }}
+      - PROVIDER_KEY_SECRET={{ stable_secret "provider_key_secret" }}
+      # Self-hosted: point the dashboard at our own API instead of tambo.co,
+      # which also hides the cloud shutdown banner.
+      - NEXT_PUBLIC_TAMBO_API_URL=http://api:3000
+      - NEXTAUTH_SECRET={{ stable_secret "nextauth_secret" }}
+      - NEXTAUTH_URL=https://${LAZYCAT_SUBDOMAIN}.${LAZYCAT_BOX_DOMAIN}
+      - RESEND_API_KEY={{ .U.resend_api_key }}
+      - EMAIL_FROM_DEFAULT={{ .U.email_from }}
+      - FALLBACK_OPENAI_API_KEY={{ .U.fallback_openai_api_key }}
+      - ALLOWED_LOGIN_DOMAIN={{ .U.allowed_login_domain }}
+      - TAMBO_WHITELABEL_ORG_NAME={{ .U.org_name }}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      api:
+        condition: service_started
+
+usage: |
+  Tambo 是一个自托管的生成式 UI 平台：你在自己的 React 应用里注册组件，Tambo 的 AI 智能体
+  根据用户消息决定渲染哪一个组件，并把组件属性以流式方式推送过去。
+
+  ⚠️ 重要背景：Tambo Cloud 已宣布停止服务（2026 年 10 月 31 日后托管 API 不再响应），
+  自托管是继续使用 Tambo 的唯一途径。
+
+  登录方式：本应用只启用了邮件登录（magic link）。
+  1. 输入邮箱，收到登录链接后点击即可进入控制台。
+  2. 首个登录的邮箱会成为管理员。
+  3. 之后可在控制台内管理成员、API Key 与项目。
+
+  邮件与模型：
+  - 登录邮件通过 Resend 发送，发件域名需已在 Resend 验证；
+  - 「模型 API Key」用于默认模型，兼容 OpenAI、DeepSeek、Ollama 等服务，
+    也可在控制台的模型设置中单独配置其他厂商。
+
+  数据：PostgreSQL 数据库、MinIO 对象存储与转码标记都保存在应用数据目录。

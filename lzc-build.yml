@@ -1,0 +1,14 @@
+manifest: ./lzc-manifest.yml
+pkgout: ./dist
+icon: ./icon.png
+
+compose_override:
+  services:
+    postgres:
+      restart: unless-stopped
+    minio:
+      restart: unless-stopped
+    api:
+      restart: unless-stopped
+    web:
+      restart: unless-stopped

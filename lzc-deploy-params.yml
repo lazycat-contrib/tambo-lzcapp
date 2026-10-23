@@ -1,0 +1,134 @@
+params:
+  - id: resend_api_key
+    type: secret
+    name: "Resend API Key"
+    description: "Resend API key used to send email login links (required to sign in)"
+    default_value: ""
+    optional: false
+
+  - id: email_from
+    type: string
+    name: "Sender Address"
+    description: "Address that login emails are sent from, e.g. tambo@your-domain.com (must be a domain verified in Resend)"
+    default_value: ""
+    optional: false
+
+  - id: fallback_openai_api_key
+    type: secret
+    name: "Model API Key"
+    description: "OpenAI-compatible API key for the default model (DeepSeek, OpenAI, Ollama and other providers supported)"
+    default_value: ""
+    optional: true
+
+  - id: allowed_login_domain
+    type: string
+    name: "Allowed Email Domain (optional)"
+    description: "Restrict signups to one email domain, e.g. example.com. Leave empty to allow any domain."
+    default_value: ""
+    optional: true
+
+  - id: org_name
+    type: string
+    name: "Organization Name (optional)"
+    description: "Organization name displayed in the dashboard"
+    default_value: ""
+    optional: true
+
+  - id: s3_endpoint
+    type: string
+    name: "S3 Endpoint (optional)"
+    description: "S3-compatible endpoint for attachment uploads, e.g. https://s3.example.com. Leave empty to use the bundled MinIO."
+    default_value: ""
+    optional: true
+
+  - id: s3_region
+    type: string
+    name: "S3 Region (optional)"
+    description: "Region of your S3 service. Leave empty for the bundled MinIO."
+    default_value: ""
+    optional: true
+
+  - id: s3_access_key_id
+    type: string
+    name: "S3 Access Key ID (optional)"
+    description: "Access key of your S3 service. Leave empty to use the bundled MinIO."
+    default_value: ""
+    optional: true
+
+  - id: s3_secret_access_key
+    type: secret
+    name: "S3 Secret Access Key (optional)"
+    description: "Secret key of your S3 service. Leave empty to use the bundled MinIO."
+    default_value: ""
+    optional: true
+
+  - id: s3_bucket
+    type: string
+    name: "S3 Bucket (optional)"
+    description: "Bucket name for attachment uploads. Leave empty to use the bundled MinIO."
+    default_value: ""
+    optional: true
+
+locales:
+  zh:
+    resend_api_key:
+      name: "Resend API Key"
+      description: "用于发送邮件登录链接的 Resend API Key（登录必需）"
+    email_from:
+      name: "发信地址"
+      description: "登录邮件的发件地址，例如 tambo@your-domain.com（需已在 Resend 验证该域名）"
+    fallback_openai_api_key:
+      name: "模型 API Key"
+      description: "默认模型使用的 OpenAI 兼容接口 Key（支持 DeepSeek、OpenAI、Ollama 等）"
+    allowed_login_domain:
+      name: "允许登录的邮箱域名（可选）"
+      description: "限制只能使用某个邮箱域名注册，例如 example.com，留空则不限制"
+    org_name:
+      name: "组织名称（可选）"
+      description: "显示在控制台中的组织名称"
+    s3_endpoint:
+      name: "S3 接入点（可选）"
+      description: "用于附件上传的 S3 兼容服务地址，例如 https://s3.example.com。留空则使用内置 MinIO。"
+    s3_region:
+      name: "S3 区域（可选）"
+      description: "S3 服务的区域，留空则使用内置 MinIO。"
+    s3_access_key_id:
+      name: "S3 Access Key ID（可选）"
+      description: "S3 服务的 Access Key，留空则使用内置 MinIO。"
+    s3_secret_access_key:
+      name: "S3 Secret Access Key（可选）"
+      description: "S3 服务的 Secret Key，留空则使用内置 MinIO。"
+    s3_bucket:
+      name: "S3 存储桶（可选）"
+      description: "存放附件的存储桶名称，留空则使用内置 MinIO。"
+  en:
+    resend_api_key:
+      name: "Resend API Key"
+      description: "Resend API key used to send email login links (required to sign in)"
+    email_from:
+      name: "Sender Address"
+      description: "Address that login emails are sent from (must be a domain verified in Resend)"
+    fallback_openai_api_key:
+      name: "Model API Key"
+      description: "OpenAI-compatible API key for the default model (DeepSeek, OpenAI, Ollama and other providers supported)"
+    allowed_login_domain:
+      name: "Allowed Email Domain (optional)"
+      description: "Restrict signups to one email domain. Leave empty to allow any domain."
+    org_name:
+      name: "Organization Name (optional)"
+      description: "Organization name shown in the dashboard"
+    s3_endpoint:
+      name: "S3 Endpoint (optional)"
+      description: "S3-compatible endpoint for attachment uploads. Leave empty to use the bundled MinIO."
+    s3_region:
+      name: "S3 Region (optional)"
+      description: "Region of your S3 service. Leave empty for the bundled MinIO."
+    s3_access_key_id:
+      name: "S3 Access Key ID (optional)"
+      description: "Access key of your S3 service. Leave empty to use the bundled MinIO."
+    s3_secret_access_key:
+      name: "S3 Secret Access Key (optional)"
+      description: "Secret key of your S3 service. Leave empty to use the bundled MinIO."
+    s3_bucket:
+      name: "S3 Bucket (optional)"
+      description: "Bucket name for attachment uploads. Leave empty to use the bundled MinIO."

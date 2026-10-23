@@ -1,0 +1,20 @@
+package: community.lazycat.app.tambo
+version: 1.33.2
+name: Tambo
+description: "Self-hosted Generative UI platform for building AI-powered React apps"
+author: tambo-ai
+license: MIT
+homepage: https://tambo.co
+min_os_version: 1.5.0
+
+permissions:
+  required:
+    - net.internet
+
+locales:
+  zh:
+    name: Tambo
+    description: "自托管的生成式 UI 平台：注册 React 组件后，由 AI 智能体根据用户消息决定渲染哪个组件并流式推送属性，适合构建 AI 应用与智能体后台"
+  en:
+    name: Tambo
+    description: "Self-hosted generative UI platform: register React components and let the AI agent decide which one to render from the user's message, streaming props as it goes"
